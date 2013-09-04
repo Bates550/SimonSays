@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Simon Says</title>
+<script src="modernizr.js"></script>
+<script type="text/javascript">
+const DEBUG = false;
+window.addEventListener('load', eventWindowLoaded, false);
+
+function eventWindowLoaded() {
+	canvasApp();
+}
+
+function canvasSupport() {
+  	return Modernizr.canvas;
+}
+
+function canvasApp() {
+
+	if (!canvasSupport()) {
+			 return;
+  	} else {
+	    var theCanvas = document.getElementById('canvas');
+	    var context = theCanvas.getContext('2d');
+	}
+		
+	// Application event listeners	
+	theCanvas.addEventListener("mouseup",eventMouseUp, false);		
+
+	// Application states
+	const STATE_RESET = 0;
+	const STATE_SIMON_WAIT = 10;
+	const STATE_SIMON_TURN = 20;
+	const STATE_PLAYER_TURN = 30;
+	const STATE_PLAYER_WAIT = 40;
+	const STATE_GAME_OVER = 50;
+	
+	// Colors
+	const RED = 5;
+	const YELLOW = 15;
+	const GREEN = 25;
+	const BLUE = 35;
+	
+	// Game variables
+	var gameState = STATE_RESET;
+	var mouseX = 0;
+	var mouseY = 0;
+	var colorSeqSimon = new Array();
+	var colorIndex = 0;
+	var colorSeqPlayer = new Array();
+	var highlightWaitTimer = 20;
+	var offWaitTimer = 5;
+	
+	function resetGame() {
+		colorSeqSimon = new Array();
+		colorIndex = 0;
+		gameState = STATE_SIMON_WAIT;
+	}
+	
+	// Implements a pause between displaying picks of the same color so that the player
+	// can distinguish that there are multiple picks.
+	function wait() {
+		if (offWaitTimer <= 0) {
+			offWaitTimer = 5;
+			drawBox();
+			drawColors(true);
+			gameState = STATE_SIMON_TURN;
+		}
+		else {
+			--offWaitTimer;
+			drawBox();
+			drawColors(true);
+		}
+	}
+
+	// Generates a random color and pushes it to colorSeqSimon then regurgitates the sequence
+	// by controlling colorIndex and calling drawColors().
+	function simonTurn() {
+		// Increment colorIndex if the current color has been displayed for long enough.
+		if (highlightWaitTimer <= 0) {
+			highlightWaitTimer = 20;
+			++colorIndex;
+			if (colorSeqSimon[colorIndex] == colorSeqSimon[colorIndex-1])
+				gameState = STATE_SIMON_WAIT;
+		} 
+		else
+			--highlightWaitTimer;
+			
+		// Push a random color to colorSeqSimon for next turn if we have reached the end of
+		// the current sequence.	
+		if (colorIndex >= colorSeqSimon.length) {
+			colorSeqSimon.push(randomColor());
+			colorIndex = 0;
+			mouseX = -1;
+			mouseY = -1;
+			gameState = STATE_PLAYER_WAIT;
+			console.log("("+mouseX+", "+mouseY+")");
+		}
+		
+		drawBox();
+		drawColors();
+	}
+	
+	
+	function playerTurn() {
+		colorSeqPlayer.push(getColorPicked());
+		if (colorSeqPlayer[colorIndex]!= colorSeqSimon[colorIndex])
+			gameState = STATE_GAME_OVER;
+		console.log("Player picks: "+colorSeqPlayer);
+		if (colorSeqPlayer.length >= colorSeqSimon.length)
+			gameState == STATE_SIMON_TURN;
+	}
+
+	// Waits for mouse clicks on the canvas.
+	function waitForInput() {
+		console.log("Called: waitForInput()");
+		console.log("("+mouseX+", "+mouseY+")");
+		if (mouseX >= 0 && mouseY >= 0) {
+			gameState = STATE_PLAYER_TURN;
+			console.log("gameState: STATE_PLAYER_TURN");
+		} 
+	}
+	
+	function getColorPicked() {
+		var colorPicked = RED;
+		if (mouseX > theCanvas.width/2 && mouseY < theCanvas.height/2)
+			colorPicked = BLUE;
+		else if (mouseX < theCanvas.width/2 && mouseY > theCanvas.height/2)
+			colorPicked = GREEN;
+		else if (mouseX > theCanvas.width/2 && mouseY > theCanvas.height/2)
+			colorPicked = YELLOW;
+		else 
+			return colorPicked;
+	}
+	
+	function gameOver() {
+		context.fillStyle = '#000000';
+		context.font = "20px Verdana";
+		var text = "GAME OVER";
+		context.fillText(text, 200,200);
+	}
+	
+	function drawBox() {
+		// Box
+		context.fillStyle = '#000000';
+		context.fillRect(0,0,theCanvas.width,theCanvas.height);
+		
+	}
+	
+	// drawColors determines which color to highlight and draws the rest a darker shade. 
+	// If called as drawColors(true) no colors will be highlighted.
+	function drawColors(off) {
+		off = typeof off !== 'undefined' ? off : false; // Default off to false.
+		
+		var tempRed = '#B20000';
+		var tempYellow = '#B2B200';
+		var tempGreen = '#00B200';
+		var tempBlue = '#0000B2';
+		
+		if (!off) {
+			var tempColor = colorSeqSimon[colorIndex];
+			switch (tempColor) {
+			case RED:
+				tempRed = '#FF0000';
+				break;
+			case YELLOW:
+				tempYellow = '#FFFF00';
+				break;
+			case GREEN:
+				tempGreen = '#00FF00';
+				break;
+			case BLUE:
+				tempBlue = '#0000FF';
+				break;
+			}
+		}  
+		
+		context.fillStyle = tempRed; // Red
+		context.fillRect(0,0,theCanvas.width/2,theCanvas.height/2);
+		context.fillStyle = tempYellow; // Yellow
+		context.fillRect(theCanvas.width/2,theCanvas.height/2,theCanvas.width/2,theCanvas.height/2);
+		context.fillStyle = tempGreen; // Green
+		context.fillRect(0,theCanvas.height/2,theCanvas.width/2,theCanvas.height/2);
+		context.fillStyle = tempBlue; // Blue
+		context.fillRect(theCanvas.width/2,0,theCanvas.width/2,theCanvas.height/2);
+	}
+	
+	// Randomly generates and returns a color.
+	function randomColor() {
+		var color = RED;
+		var randNum = Math.floor(Math.random()*10)%4;
+		switch(randNum) {
+		case 0:
+			color = YELLOW;
+			break;
+		case 1:
+			color = GREEN;
+			break;
+		case 2:
+			color = BLUE;
+			break;
+		case 3:
+			color = RED;
+			break;
+		}
+		return color;
+	}
+
+	function eventMouseUp(e) {
+	    var mouseX, mouseY;
+
+	    if(e.offsetX) {
+	        mouseX = e.offsetX;
+	        mouseY = e.offsetY;
+	    } else if (e.layerX) {
+	        mouseX = e.layerX;
+	        mouseY = e.layerY;
+		}
+		
+		if (DEBUG)
+			console.log("("+mouseX+", "+mouseY+")");
+	}
+
+	function run() {
+		switch(gameState) {
+		case STATE_PLAYER_WAIT:
+			waitForInput();
+			break;
+		case STATE_SIMON_WAIT:
+			wait();
+			break;
+		case STATE_RESET:
+			resetGame();
+			break;
+		case STATE_SIMON_TURN:
+			simonTurn();
+			break;
+		case STATE_PLAYER_TURN:
+			playerTurn();
+			break;
+		case STATE_GAME_OVER:
+			gameOver();
+			break;
+		}
+	}
+		
+	// Application Loop
+	const FPS = 30;
+	var intervalTime = 1000/FPS;
+	
+	function gameLoop() {
+		window.setTimeout(gameLoop, intervalTime);
+		run();
+	}
+	
+	gameLoop();
+}
+
+</script>
+</head>
+
+<body>
+</script> 
+</head>
+<body>
+<div style="position: absolute; top: 50px; left: 50px;">
+<canvas id="canvas" width="400" height="400">
+ Your browser does not support the HTML 5 Canvas. 
+</canvas>
+</div>
+<div id="gameOutput"></div>
+</body>
+</html>
