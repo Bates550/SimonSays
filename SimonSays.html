@@ -9,7 +9,7 @@
 const DEBUG_SIMON = true;
 const DEBUG_STATE = true;
 const DEBUG_MOUSE = false;
-const DEBUG_PLAYER = true;
+const DEBUG_PLAYER = false;
 
 window.addEventListener('load', eventWindowLoaded, false);
 
@@ -36,10 +36,11 @@ function canvasApp() {
 	// Application states
 	const STATE_RESET = 0;
 	const STATE_SIMON_WAIT = 10;
-	const STATE_SIMON_TURN = 20;
-	const STATE_PLAYER_TURN = 30;
-	const STATE_PLAYER_WAIT = 40;
-	const STATE_GAME_OVER = 50;
+	const STATE_SIMON_PUSH = 20;
+	const STATE_SIMON_DISPLAY = 30;
+	const STATE_PLAYER_TURN = 40;
+	const STATE_PLAYER_WAIT = 50;
+	const STATE_GAME_OVER = 60;
 	
 	// Colors
 	const RED = 5;
@@ -48,78 +49,97 @@ function canvasApp() {
 	const BLUE = 35;
 	
 	// Game variables
-	var gameState = STATE_SIMON_TURN;
+	var gameState = STATE_SIMON_PUSH;
 	var mouseX = 0;
 	var mouseY = 0;
 	var simonColors = new Array();
-	var colorIndex = -1;
+	var colorIndex = 0;
 	var playerColors = new Array();
-	var highlightWaitTimer = 20;
-	var offWaitTimer = 5;
+	var highlightInterval = 20;
+	var highlightTimer = highlightInterval;
+	var waitInterval = 5;
+	var waitTimer = waitInterval;
 	
 	function resetGame() {
 		simonColors = new Array();
-		colorIndex = -1;
-		gameState = STATE_SIMON_TURN;
+		colorIndex = 0;
+		gameState = STATE_SIMON_PUSH;
 	}
 	
 	// Implements a pause between displaying picks of the same color so that the player
 	// can distinguish that there are multiple picks.
-	function wait() {
-		if (offWaitTimer <= 0) {
-			offWaitTimer = 5;
-			//drawBox();
-			//drawColors(true);
-			gameState = STATE_SIMON_TURN;
+	function simonWait() {
+		if (waitTimer <= 0) {
+			waitTimer = waitInterval;
+			drawBox();
+			drawColors(true);
+			gameState = STATE_SIMON_DISPLAY;
 		}
 		else {
-			--offWaitTimer;
+			--waitTimer;
 			drawBox();
 			drawColors(true);
 		}
 	}
 
-	// Generates a random color and pushes it to simonColors then regurgitates the sequence
-	// by controlling colorIndex and calling drawColors().
-	function simonTurn() {
-		// Increment colorIndex if the current color has been displayed for long enough.
-		// CONSIDER PUTTING INTO ANOTHER FUNCTION (e.g. highlightWait()).
-		if (highlightWaitTimer <= 0) {
-			highlightWaitTimer = 20;
-			++colorIndex;
-			/*if (simonColors[colorIndex] == simonColors[colorIndex-1])
-				gameState = STATE_SIMON_WAIT;
-			*/
-		} 
-		else
-			--highlightWaitTimer;
-		
-		// If this is Simon's first turn (e.g. colorIndex < 0), push a random color to simonColors.
-		// Otherwise check to see if we have already displayed all of simonColors already, push a
-		// random color to simonColors if we have for the next turn, and set colorIndex to 0 for 
-		// the player's turn.
-		if (colorIndex < 0) 
-			simonColors.push(randomColor());
-		else if (colorIndex-1 >= simonColors.length) {
-			simonColors.push(randomColor());
-			colorIndex = 0;
-			resetMouse();
-			playerColors = new Array();
-			gameState = STATE_PLAYER_WAIT;
+	// Pushes a random color to simonColors
+	function simonPush() {
+		simonColors.push(getRandColor());
+		gameState = STATE_SIMON_DISPLAY;
+	}
+
+
+	// Displays each color in simonColors highlighted for a short period (as determined by
+	// highlightInterval).
+	function simonDisplay() {
+		if (highlightTimer > 0 && colorIndex < simonColors.length) {
+			--highlightTimer;
+			drawBox();
+			drawColors();
 		}
-		
+		else if (colorIndex < simonColors.length) {
+			++colorIndex;
+			highlightTimer = highlightInterval;
+			gameState = STATE_SIMON_WAIT;
+		}
+		else {
+			resetMouse();
+			gameState = STATE_PLAYER_WAIT;
+			drawBox();
+			drawColors();
+		}
+
+		//drawBox();
+		//drawColors();
+
 		/*** DEBUG ***/
 		if (DEBUG_SIMON) {
+			console.log("highLightTimer: "+highlightTimer);
 			console.log("colorIndex: "+colorIndex);
 			console.log("simonColors[colorIndex]: "+simonColors[colorIndex]);
 			console.log("simonColors: "+simonColors);
 		}
-		
+	}
+
+	// Pushes a random color to simonColors, displays each color highlighted for a short period
+	// (as determined by highlightInterval), and then changes game state to STATE_PLAYER_WAIT.
+/*	function simonTurn() {
+		simonColors.push(getRandColor());
+
+		if (highlightTimer > 0) {
+			--highlightTimer;
+		} 
+		else if (colorIndex < simonColors.length) {
+			hightlightWaitTimer = highlightInterval;
+			++colorIndex;
+		}
+
 		drawBox();
 		drawColors();
 	}
+*/
 	
-	
+	// CURRENTLY DEPRECATED, SETS GAMESTATE TO STATE_SIMON_TURN
 	function playerTurn() {
 		playerColors.push(getColorPicked());
 		
@@ -131,10 +151,12 @@ function canvasApp() {
 			console.log("playerColors: "+playerColors);
 		}
 		
-		if (playerColors[colorIndex] != simonColors[colorIndex])
+		if (playerColors[colorIndex-1] != simonColors[colorIndex-1])
 			gameState = STATE_GAME_OVER;
-		else if (playerColors.length >= simonColors.length)
-			gameState = STATE_SIMON_TURN;
+		else if (playerColors.length >= simonColors.length) {
+			colorIndex = 0;
+			gameState = STATE_SIMON_PUSH;
+		}
 		else {
 			++colorIndex;
 			resetMouse();
@@ -150,7 +172,7 @@ function canvasApp() {
 	}
 	
 	// Waits for mouse clicks on the canvas.
-	function waitForInput() {
+	function playerWait() {
 		if (mouseX >= 0 && mouseY >= 0) {
 			gameState = STATE_PLAYER_TURN;
 		} 
@@ -220,7 +242,7 @@ function canvasApp() {
 	}
 	
 	// Randomly generates and returns a color.
-	function randomColor() {
+	function getRandColor() {
 		var color = RED;
 		var randNum = Math.floor(Math.random()*10)%4;
 		switch(randNum) {
@@ -267,8 +289,11 @@ function canvasApp() {
 			case STATE_RESET:
 				console.log("STATE_RESET");
 				break;
-			case STATE_SIMON_TURN:
-				console.log("STATE_SIMON_TURN");
+			case STATE_SIMON_PUSH:
+				console.log("STATE_SIMON_PUSH");
+				break;
+			case STATE_SIMON_DISPLAY:
+				console.log("STATE_SIMON_DISPLAY");
 				break;
 			case STATE_PLAYER_TURN:
 				console.log("STATE_PLAYER_TURN");
@@ -280,16 +305,19 @@ function canvasApp() {
 		}	
 		switch(gameState) {
 		case STATE_PLAYER_WAIT:
-			waitForInput();
+			playerWait();
 			break;
 		case STATE_SIMON_WAIT:
-			wait();
+			simonWait();
 			break;
 		case STATE_RESET:
 			resetGame();
 			break;
-		case STATE_SIMON_TURN:
-			simonTurn();
+		case STATE_SIMON_PUSH:
+			simonPush();
+			break;
+		case STATE_SIMON_DISPLAY:
+			simonDisplay();
 			break;
 		case STATE_PLAYER_TURN:
 			playerTurn();
