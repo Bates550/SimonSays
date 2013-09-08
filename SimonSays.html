@@ -6,10 +6,10 @@
 <script src="modernizr.js"></script>
 <script type="text/javascript">
 /*** DEBUG ***/
-const DEBUG_SIMON = true;
+const DEBUG_SIMON = false;
 const DEBUG_STATE = true;
 const DEBUG_MOUSE = false;
-const DEBUG_PLAYER = false;
+const DEBUG_PLAYER = true;
 
 window.addEventListener('load', eventWindowLoaded, false);
 
@@ -43,7 +43,7 @@ function canvasApp() {
 	const STATE_GAME_OVER = 60;
 	
 	// Colors
-	const RED = 5;
+	const RED = 5;	
 	const YELLOW = 15;
 	const GREEN = 25;
 	const BLUE = 35;
@@ -107,6 +107,7 @@ function canvasApp() {
 			gameState = STATE_PLAYER_WAIT;
 			drawBox();
 			drawColors();
+			colorIndex = 0;
 		}
 
 		//drawBox();
@@ -139,10 +140,13 @@ function canvasApp() {
 	}
 */
 	
-	// CURRENTLY DEPRECATED, SETS GAMESTATE TO STATE_SIMON_TURN
+	// playerTurn() pushes player's color choice to playerColors and checks it against 
+	// the color at simonColors[colorIndex]. If the colors are the same and we have not 
+	// reached the end of simonColors, we again wait for player input, and if the colors
+	// do not match, it's game over... man.
 	function playerTurn() {
 		playerColors.push(getColorPicked());
-		
+
 		/*** DEBUG ***/
 		if (DEBUG_PLAYER) {
 			console.log("colorIndex: "+colorIndex);
@@ -150,18 +154,19 @@ function canvasApp() {
 			console.log("simonColors[colorIndex]: "+simonColors[colorIndex]);
 			console.log("playerColors: "+playerColors);
 		}
-		
-		if (playerColors[colorIndex-1] != simonColors[colorIndex-1])
-			gameState = STATE_GAME_OVER;
-		else if (playerColors.length >= simonColors.length) {
+
+		if (playerColors.length >= simonColors.length && playerColors[colorIndex] == simonColors[colorIndex]) {
+			playerColors = new Array();
 			colorIndex = 0;
 			gameState = STATE_SIMON_PUSH;
 		}
-		else {
+		else if (playerColors[colorIndex] == simonColors[colorIndex]) {
 			++colorIndex;
 			resetMouse();
 			gameState = STATE_PLAYER_WAIT;
 		}
+		else 
+			gameState = STATE_GAME_OVER;
 	}
 
 	// Sets mouseX and mouseY to (-1,-1) to simplify hit testing.
