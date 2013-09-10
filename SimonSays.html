@@ -6,12 +6,13 @@
 <script src="modernizr.js"></script>
 <script type="text/javascript">
 /*** DEBUG ***/
+const DEBUG_STATE = true;
 const DEBUG_SIMON = false;
-const DEBUG_STATE = false;;
-const DEBUG_MOUSE = false;
 const DEBUG_PLAYER = false;
+const DEBUG_MOUSE_DOWN = false;
+const DEBUG_MOUSE_UP = false;
 const DEBUG_WAIT_INTERVAL = false;
-const DEBUG_HIGHLIGHT_INTERVAL = true;
+const DEBUG_HIGHLIGHT_INTERVAL = false;
 
 window.addEventListener('load', eventWindowLoaded, false);
 
@@ -34,6 +35,7 @@ function canvasApp() {
 		
 	// Application event listeners	
 	theCanvas.addEventListener("mousedown", eventMouseDown, false);		
+	theCanvas.addEventListener("mouseup", eventMouseUp, false);
 
 	// Application states
 	const STATE_RESET = 0;
@@ -66,6 +68,7 @@ function canvasApp() {
 	var waitInterval = 5;
 	var minWaitInterval = 2;
 	var waitTimer = waitInterval;
+	var colorHighlighted = false;
 	
 	function resetGame() {
 		simonColors = new Array();
@@ -80,7 +83,7 @@ function canvasApp() {
 			waitTimer = (waitInterval-minWaitInterval)
 				*Math.pow(DECAY_CONST, simonColors.length)+minWaitInterval;
 			drawBox();
-			drawColors(true);
+			drawColors('off');
 			gameState = STATE_SIMON_DISPLAY;
 
 			/*** DEBUG ***/
@@ -90,7 +93,7 @@ function canvasApp() {
 		else {
 			--waitTimer;
 			drawBox();
-			drawColors(true);
+			drawColors('off');
 		}
 	}
 
@@ -116,8 +119,10 @@ function canvasApp() {
 			gameState = STATE_SIMON_WAIT;
 
 			/*** DEBUG ***/
-			if (DEBUG_HIGHLIGHT_INTERVAL) 
+			if (DEBUG_HIGHLIGHT_INTERVAL) {
 				console.log("highlightTimer: "+highlightTimer);
+				console.log("simonColors.length: "+simonColors.length);
+			}
 		}
 		else {
 			resetMouse();
@@ -127,9 +132,6 @@ function canvasApp() {
 			colorIndex = 0;
 		}
 
-		//drawBox();
-		//drawColors();
-
 		/*** DEBUG ***/
 		if (DEBUG_SIMON) {
 			console.log("highLightTimer: "+highlightTimer);
@@ -138,24 +140,6 @@ function canvasApp() {
 			console.log("simonColors: "+simonColors);
 		}
 	}
-
-	// Pushes a random color to simonColors, displays each color highlighted for a short period
-	// (as determined by highlightInterval), and then changes game state to STATE_PLAYER_WAIT.
-/*	function simonTurn() {
-		simonColors.push(getRandColor());
-
-		if (highlightTimer > 0) {
-			--highlightTimer;
-		} 
-		else if (colorIndex < simonColors.length) {
-			hightlightWaitTimer = highlightInterval;
-			++colorIndex;
-		}
-
-		drawBox();
-		drawColors();
-	}
-*/
 	
 	// playerTurn() pushes player's color choice to playerColors and checks it against 
 	// the color at simonColors[colorIndex]. If the colors are the same and we have not 
@@ -163,7 +147,7 @@ function canvasApp() {
 	// do not match, it's game over... man.
 	function playerTurn() {
 		playerColors.push(getColorPicked());
-
+		
 		/*** DEBUG ***/
 		if (DEBUG_PLAYER) {
 			console.log("colorIndex: "+colorIndex);
@@ -226,17 +210,22 @@ function canvasApp() {
 	}
 	
 	// drawColors determines which color to highlight and draws the rest a darker shade. 
-	// If called as drawColors(true) no colors will be highlighted.
-	function drawColors(off) {
-		off = typeof off !== 'undefined' ? off : false; // Default off to false.
+	// If called as drawColors('off') no colors will be highlighted, as drawColors('red') 
+	// the red square will be highlighted, as drawColors() the color at simonColors[colorIndex]
+	// will be highlighted.
+	function drawColors(color) {
+		color = typeof color !== 'undefined' ? color : 'none'; // Default color to 'none'.
 		
 		var tempRed = '#B20000';
 		var tempYellow = '#B2B200';
 		var tempGreen = '#00B200';
 		var tempBlue = '#0000B2';
 		
-		if (!off) {
-			var tempColor = simonColors[colorIndex];
+		if (color != 'off') {
+			if (color == 'none')
+				var tempColor = simonColors[colorIndex];
+			else
+				var tempColor = color;
 			switch (tempColor) {
 			case RED:
 				tempRed = '#FF0000';
@@ -288,16 +277,34 @@ function canvasApp() {
 	    if(e.offsetX) {
 	        mouseX = e.offsetX;
 	        mouseY = e.offsetY;
-	    } else if (e.layerX) {
+	    }
+		else if (e.layerX) {
 	        mouseX = e.layerX;
 	        mouseY = e.layerY;
 		}
 		
+		if (!colorHighlighted) {
+			drawBox();
+			drawColors(getColorPicked());
+			colorHighlighted = true;
+		}
+		
 		/*** DEBUG ***/
-		if (DEBUG_MOUSE)
+		if (DEBUG_MOUSE_DOWN)
 			console.log("("+mouseX+", "+mouseY+")");
 	}
 
+	function eventMouseUp(e) {
+		if (colorHighlighted) {
+			drawBox();
+			drawColors('off');
+			colorHighlighted = false;
+		}
+		/*** DEBUG ***/
+		if (DEBUG_MOUSE_UP)
+			console.log("("+mouseX+", "+mouseY+")");		
+	}
+	
 	function run() {
 		/*** DEBUG ***/
 		if (DEBUG_STATE) {
