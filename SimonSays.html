@@ -7,9 +7,11 @@
 <script type="text/javascript">
 /*** DEBUG ***/
 const DEBUG_SIMON = false;
-const DEBUG_STATE = true;
+const DEBUG_STATE = false;;
 const DEBUG_MOUSE = false;
-const DEBUG_PLAYER = true;
+const DEBUG_PLAYER = false;
+const DEBUG_WAIT_INTERVAL = false;
+const DEBUG_HIGHLIGHT_INTERVAL = true;
 
 window.addEventListener('load', eventWindowLoaded, false);
 
@@ -48,6 +50,9 @@ function canvasApp() {
 	const GREEN = 25;
 	const BLUE = 35;
 	
+	// Other Game Constants
+	const DECAY_CONST = 0.9124435
+
 	// Game variables
 	var gameState = STATE_SIMON_PUSH;
 	var mouseX = 0;
@@ -56,8 +61,10 @@ function canvasApp() {
 	var colorIndex = 0;
 	var playerColors = new Array();
 	var highlightInterval = 20;
+	var minHighlightInterval = 10;
 	var highlightTimer = highlightInterval;
 	var waitInterval = 5;
+	var minWaitInterval = 2;
 	var waitTimer = waitInterval;
 	
 	function resetGame() {
@@ -70,10 +77,15 @@ function canvasApp() {
 	// can distinguish that there are multiple picks.
 	function simonWait() {
 		if (waitTimer <= 0) {
-			waitTimer = waitInterval;
+			waitTimer = (waitInterval-minWaitInterval)
+				*Math.pow(DECAY_CONST, simonColors.length)+minWaitInterval;
 			drawBox();
 			drawColors(true);
 			gameState = STATE_SIMON_DISPLAY;
+
+			/*** DEBUG ***/
+			if (DEBUG_WAIT_INTERVAL)
+				console.log("waitTimer: "+waitTimer);
 		}
 		else {
 			--waitTimer;
@@ -99,8 +111,13 @@ function canvasApp() {
 		}
 		else if (colorIndex < simonColors.length) {
 			++colorIndex;
-			highlightTimer = highlightInterval;
+			highlightTimer = (highlightInterval-minHighlightInterval)
+				*Math.pow(DECAY_CONST, simonColors.length)+minHighlightInterval;
 			gameState = STATE_SIMON_WAIT;
+
+			/*** DEBUG ***/
+			if (DEBUG_HIGHLIGHT_INTERVAL) 
+				console.log("highlightTimer: "+highlightTimer);
 		}
 		else {
 			resetMouse();
