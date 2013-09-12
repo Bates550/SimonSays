@@ -32,6 +32,7 @@ function canvasApp() {
 	// Application event listeners	
 	theCanvas.addEventListener("mousedown", eventMouseDown, false);		
 	theCanvas.addEventListener("mouseup", eventMouseUp, false);
+	theCanvas.addEventListener("mousemove", eventMouseMove, false);
 
 	// Application states
 	const STATE_RESET = 0;
@@ -59,6 +60,9 @@ function canvasApp() {
 	const MENU_HIGH_SCORES = 20;
 	const MENU_NONE = 30;
 	
+	// Menu Variables
+	var menuHighlight = 'none';
+
 	// Game variables
 	var gameState = STATE_TITLE;
 	var menuState = MENU_NONE;
@@ -172,31 +176,65 @@ function canvasApp() {
 	}
 	
 	function showMainMenu() {
-		drawColors('none');
-
 		context.font = "30px Plaster";
 		var playW = context.measureText("Play").width;
 		var rulesW = context.measureText("Rules").width;
-		var scoreW = context.measureText("Scores").width;
+		var scoresW = context.measureText("Scores").width;
 		var aboutW = context.measureText("About").width;
 
 		var playX = theCanvas.width*0.25 - playW*0.5;
 		var playY = theCanvas.height*0.25;
 		var rulesX = theCanvas.width*0.75 - rulesW*0.5;
 		var rulesY = theCanvas.height*0.25;
-		var scoreX = theCanvas.width*0.25 - scoreW*0.5;
-		var scoreY = theCanvas.height*0.75;
+		var scoresX = theCanvas.width*0.25 - scoresW*0.5;
+		var scoresY = theCanvas.height*0.75;
 		var aboutX = theCanvas.width*0.75 - aboutW*0.5;
 		var aboutY = theCanvas.height*0.75;
 
-		context.fillStyle = '#CCCC00';
+		var tempRed = '#CC0000';
+		var tempYellow = '#CCCC00';
+		var tempGreen = '#00CC00';
+		var tempBlue = '#0000CC';
+		var colorsParam = 'none';
+
+		switch (menuHighlight) {
+		case 'none':
+			colorsParam = 'off';
+			break;
+		case 'play':
+			colorsParam = RED;
+			tempYellow = '#FFFF00';
+			break;
+		case 'rules':
+			colorsParam = BLUE;
+			tempGreen = '#00FF00';
+			break;
+		case 'scores':
+			colorsParam = GREEN;
+			tempBlue = '#0000FF';
+			break;
+		case 'about':
+			colorsParam = YELLOW;
+			tempRed = '#FF0000';
+			break;
+		}
+
+		drawColors(colorsParam);
+		context.fillStyle = tempYellow;
 		context.fillText("Play", playX, playY);
-		context.fillStyle = '#00CC00';
+		context.fillStyle = tempGreen;
 		context.fillText("Rules", rulesX, rulesY);
-		context.fillStyle = '#0000CC';
-		context.fillText("Scores", scoreX, scoreY);
-		context.fillStyle = '#CC0000';
+		context.fillStyle = tempBlue;
+		context.fillText("Scores", scoresX, scoresY);
+		context.fillStyle = tempRed;
 		context.fillText("About", aboutX, aboutY);
+
+		/* For finding text positions.
+		console.log("Play: ("+playX+", "+(playY-15)+", "+(playX+playW)+", "+(playY+15)+")");
+		console.log("Rules: ("+rulesX+", "+(rulesY-15)+", "+(rulesX+rulesW)+", "+(rulesY+15)+")");
+		console.log("Scores: ("+scoresX+", "+(scoresY-15)+", "+(scoresX+scoresW)+", "+(scoresY+15)+")");
+		console.log("About: ("+aboutX+", "+(aboutY-15)+", "+(aboutX+aboutW)+", "+(aboutY+15)+")");
+		*/
 	}
 	
 	function showAbout() {
@@ -341,7 +379,7 @@ function canvasApp() {
 	}*/
 	
 	// drawColors determines which color to highlight and draws the rest a darker shade. 
-	// If called as drawColors('off') no colors will be highlighted, as drawColors('red') 
+	// If called as drawColors('off') no colors will be highlighted, as drawColors(RED) 
 	// the red square will be highlighted, as drawColors() the color at simonColors[colorIndex]
 	// will be highlighted.
 	function drawColors(color) {
@@ -436,6 +474,38 @@ function canvasApp() {
 		/*** DEBUG ***/
 		if (DEBUG_MOUSE_UP)
 			console.log("("+mouseX+", "+mouseY+")");		
+	}
+	
+	function eventMouseMove(e) {
+		if (gameState == STATE_MENU) {
+			var padding = 15;
+			if(e.offsetX) {
+				mouseX = e.offsetX;
+				mouseY = e.offsetY;
+			}
+			else if (e.layerX) {
+				mouseX = e.layerX;
+				mouseY = e.layerY;
+			}
+			// Play
+			if (mouseX > 60-padding && mouseX < 140+padding
+				&& mouseY > 85-padding && mouseY < 115+padding)
+				menuHighlight = 'play';
+			// Rules
+			else if (mouseX > 249-padding && mouseX < 351+padding 
+				&& mouseY > 85-padding && mouseY < 115+padding)
+				menuHighlight = 'rules';
+			// Scores
+			else if (mouseX > 33-padding && mouseX < 167+padding 
+				&& mouseY > 285-padding && mouseY < 315+padding)
+				menuHighlight = 'scores';
+			// About
+			else if (mouseX > 244-padding && mouseX < 356+padding
+				&& mouseY > 285-padding && mouseY < 315+padding)
+				menuHighlight = 'about';
+			else 
+				menuHighlight = 'none';
+		}
 	}
 	
 	function run() {
