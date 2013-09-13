@@ -59,7 +59,8 @@ function canvasApp() {
 	const MENU_RULES = 0;
 	const MENU_ABOUT = 10;
 	const MENU_SCORES = 20;
-	const MENU_NONE = 30;
+	const MENU_PLAY = 30;
+	const MENU_NONE = 40;
 	
 	// Menu Variables
 	var menuHighlight = 'none';
@@ -148,6 +149,9 @@ function canvasApp() {
 			case MENU_NONE:
 				console.log("MENU_NONE");
 				break;
+			case MENU_PLAY:
+				console.log("MENU_PLAY");
+				break;
 			case MENU_ABOUT:
 				console.log("MENU_ABOUT");
 				break;
@@ -163,6 +167,9 @@ function canvasApp() {
 		switch(menuState) {
 		case MENU_NONE:
 			showMenu();
+			break;
+		case MENU_PLAY:
+			gameState = STATE_SIMON_PUSH;
 			break;
 		case MENU_ABOUT:
 			showAbout();
@@ -239,11 +246,22 @@ function canvasApp() {
 	}
 	
 	function showAbout() {
-		
+		var padding = 25
+		var x = padding;
+		var y = padding;
+		var w = theCanvas.width-padding*2;
+		var lineHeight = 30;
+		var text = "Simon Says is a personal project that I used to experiment with the HTML5 Canvas tag and Javascript. The source can be found at github.com/Bates550/simon-says or in your browser if you're into that sort of thing."
+
+		context.fillStyle = '#CCCC00';
+		context.fillRect(0, 0, theCanvas.width, theCanvas.height);
+		context.font = "18px Tahoma";
+		context.fillStyle = '#CC0000';
+		wrapText(context, text, x, y, w, lineHeight);
 	}
 	
 	function showRules() {
-	
+		
 	}
 	
 	function showHighScores() {
@@ -385,7 +403,7 @@ function canvasApp() {
 		if (mouseX > 60-padding && mouseX < 140+padding
 			&& mouseY > 85-padding && mouseY < 115+padding) {
 			tempMenuHighlight = 'play';
-			tempMenuState = MENU_NONE;
+			tempMenuState = MENU_PLAY;
 		}
 		// Rules
 		else if (mouseX > 249-padding && mouseX < 351+padding 
@@ -404,7 +422,8 @@ function canvasApp() {
 			&& mouseY > 285-padding && mouseY < 315+padding) {
 			tempMenuHighlight = 'about';
 			tempMenuState = MENU_ABOUT;
-		}
+		} 
+
 
 		if (option == 'highlight')
 			return tempMenuHighlight;
@@ -488,6 +507,27 @@ function canvasApp() {
 		return color;
 	}
 
+	// Stolen from http://www.html5canvastutorials.com/tutorials/html5-canvas-wrap-text-tutorial/
+	// Wraps supplied text according to supplied parameters. 
+	function wrapText(context, text, x, y, maxWidth, lineHeight) {
+        var words = text.split(' ');
+        var line = '';
+
+        for (var n = 0; n < words.length; n++) {
+			var testLine = line + words[n] + ' ';
+			var metrics = context.measureText(testLine);
+			var testWidth = metrics.width;
+			if (testWidth > maxWidth && n > 0) {
+				context.fillText(line, x, y);
+				line = words[n] + ' ';
+				y += lineHeight;
+			}
+			else 
+				line = testLine;
+        }
+        context.fillText(line, x, y);
+    }
+
 	function eventMouseDown(e) {
 	    if(e.offsetX) {
 	        mouseX = e.offsetX;
@@ -505,8 +545,6 @@ function canvasApp() {
 
 		if (gameState == STATE_MENU) {
 			menuState = getMenuOptionPicked('state');
-			if (menuState == MENU_NONE) 
-				gameState = STATE_SIMON_PUSH;
 		}
 
 		/*** DEBUG ***/
