@@ -246,20 +246,51 @@ function canvasApp() {
 	}
 	
 	function showAbout() {
-		var padding = 25
-		var x = padding;
-		var y = padding;
-		var w = theCanvas.width-padding*2;
+		var topPadding = 70;
+		var sidePadding = 25;
+		var x = theCanvas.width*0.5;
+		var y = topPadding;
+		var w = theCanvas.width-sidePadding*2;
 		var lineHeight = 30;
 		var text = "Simon Says is a personal project that I used to experiment with the HTML5 Canvas tag and Javascript. The source can be found at github.com/Bates550/simon-says or in your browser if you're into that sort of thing."
+		var backHighlight = false;
+		var backRectColor = '#CC0000';
+		var backTextColor = '#CCCC00';
+		var buttonW = 70;
+		var buttonR = 25;
+		var buttonX = theCanvas.width*0.5 - buttonW*0.5 - buttonR;
+		var buttonY = theCanvas.height*0.8 - buttonR;
 
 		context.fillStyle = '#CCCC00';
 		context.fillRect(0, 0, theCanvas.width, theCanvas.height);
 		context.font = "18px Tahoma";
 		context.fillStyle = '#CC0000';
+		context.textAlign = 'center'
 		wrapText(context, text, x, y, w, lineHeight);
+
+		if (backHighlight == true) {
+			backRectColor = '#FF0000';
+			backTextColor = '#FFFF00';
+		}
+
+		context.fillStyle = backRectColor;
+		drawButton(context, buttonX, buttonY, buttonR, buttonW);
+		context.font = "30px Plaster";
+		context.fillStyle = backTextColor;
+		context.fillText("Back", theCanvas.width*0.5, theCanvas.height*0.8);
 	}
 	
+	function drawButton(context, x, y, radius, width) {
+		context.beginPath();
+		context.moveTo(x+radius, y);
+		context.lineTo(x+width+radius, y);
+		context.arc(x+width+radius, y+radius, radius, 1.5*Math.PI, 0.5*Math.PI);
+		context.lineTo(x+radius, y+2*radius);
+		context.arc(x+radius, y+radius, radius, 0.5*Math.PI, 1.5*Math.PI);
+		context.closePath();
+		context.fill();
+	} 
+
 	function showRules() {
 		
 	}
