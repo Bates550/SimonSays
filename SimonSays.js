@@ -8,6 +8,7 @@ const DEBUG_WAIT_INTERVAL = false;
 const DEBUG_HIGHLIGHT_INTERVAL = false;
 const DEBUG_TITLE = false;
 const DEBUG_MENU_STATE = true;
+const DEBUG_MENU_TEXT = false;
 
 window.addEventListener('load', eventWindowLoaded, false);
 
@@ -57,7 +58,7 @@ function canvasApp() {
 	// Menu states
 	const MENU_RULES = 0;
 	const MENU_ABOUT = 10;
-	const MENU_HIGH_SCORES = 20;
+	const MENU_SCORES = 20;
 	const MENU_NONE = 30;
 	
 	// Menu Variables
@@ -139,8 +140,8 @@ function canvasApp() {
 		}
 	}
 	
-	// 
-	function showMenu() {
+	// A sub-run() function for organizing menu states.
+	function runMenu() {
 		/*** DEBUG ***/
 		if (DEBUG_MENU_STATE) {
 			switch(menuState) {
@@ -153,15 +154,15 @@ function canvasApp() {
 			case MENU_RULES:
 				console.log("MENU_RULES");
 				break;
-			case MENU_HIGH_SCORES:
-				console.log("MENU_HIGH_SCORES");
+			case MENU_SCORES:
+				console.log("MENU_SCORES");
 				break;
 			}			
 		}
 
 		switch(menuState) {
 		case MENU_NONE:
-			showMainMenu();
+			showMenu();
 			break;
 		case MENU_ABOUT:
 			showAbout();
@@ -169,13 +170,13 @@ function canvasApp() {
 		case MENU_RULES:
 			showRules();
 			break;
-		case MENU_HIGH_SCORES:
+		case MENU_SCORES:
 			showHighScores();
 			break;
 		}
 	}
 	
-	function showMainMenu() {
+	function showMenu() {
 		context.font = "30px Plaster";
 		var playW = context.measureText("Play").width;
 		var rulesW = context.measureText("Rules").width;
@@ -229,16 +230,16 @@ function canvasApp() {
 		context.fillStyle = tempRed;
 		context.fillText("About", aboutX, aboutY);
 
-		/* For finding text positions.
-		console.log("Play: ("+playX+", "+(playY-15)+", "+(playX+playW)+", "+(playY+15)+")");
-		console.log("Rules: ("+rulesX+", "+(rulesY-15)+", "+(rulesX+rulesW)+", "+(rulesY+15)+")");
-		console.log("Scores: ("+scoresX+", "+(scoresY-15)+", "+(scoresX+scoresW)+", "+(scoresY+15)+")");
-		console.log("About: ("+aboutX+", "+(aboutY-15)+", "+(aboutX+aboutW)+", "+(aboutY+15)+")");
-		*/
+		if (DEBUG_MENU_TEXT) {
+			console.log("Play: ("+playX+", "+(playY-15)+", "+(playX+playW)+", "+(playY+15)+")");
+			console.log("Rules: ("+rulesX+", "+(rulesY-15)+", "+(rulesX+rulesW)+", "+(rulesY+15)+")");
+			console.log("Scores: ("+scoresX+", "+(scoresY-15)+", "+(scoresX+scoresW)+", "+(scoresY+15)+")");
+			console.log("About: ("+aboutX+", "+(aboutY-15)+", "+(aboutX+aboutW)+", "+(aboutY+15)+")");
+		}
 	}
 	
 	function showAbout() {
-	
+		
 	}
 	
 	function showRules() {
@@ -363,6 +364,53 @@ function canvasApp() {
 			colorPicked = YELLOW;
 		return colorPicked;
 	}
+
+	// Determines what menu option is selected based on current mouseX and mouseY.
+	// option is a required parameter with valid options being 'highlight' and 
+	// 'state'. If 'highlight' is supplied, the function will return a valid menuHighlight
+	// string; if 'state' is supplied, the function will return a valid menuState.
+	// The function will return null and display an error to the console if an invalid
+	// parameter is supplied for option.
+	function getMenuOptionPicked(option) {
+		if (option != 'highlight' && option != 'state') {
+			console.log("getMenuOptionPicked called with invalid parameter: "+option);
+			return null;
+		}
+		
+		var padding = 15;
+		var tempMenuHighlight = 'none';
+		var tempMenuState = MENU_NONE;
+
+		// Play
+		if (mouseX > 60-padding && mouseX < 140+padding
+			&& mouseY > 85-padding && mouseY < 115+padding) {
+			tempMenuHighlight = 'play';
+			tempMenuState = MENU_NONE;
+		}
+		// Rules
+		else if (mouseX > 249-padding && mouseX < 351+padding 
+			&& mouseY > 85-padding && mouseY < 115+padding) {
+			tempMenuHighlight = 'rules';
+			tempMenuState = MENU_RULES;
+		}
+		// Scores
+		else if (mouseX > 33-padding && mouseX < 167+padding 
+			&& mouseY > 285-padding && mouseY < 315+padding) {
+			tempMenuHighlight = 'scores';
+			tempMenuState = MENU_SCORES;
+		}
+		// About
+		else if (mouseX > 244-padding && mouseX < 356+padding
+			&& mouseY > 285-padding && mouseY < 315+padding) {
+			tempMenuHighlight = 'about';
+			tempMenuState = MENU_ABOUT;
+		}
+
+		if (option == 'highlight')
+			return tempMenuHighlight;
+		else if (option == 'state') 
+			return tempMenuState;
+	}
 	
 	function gameOver() {
 		context.fillStyle = '#000000';
@@ -370,13 +418,6 @@ function canvasApp() {
 		var text = "GAME OVER";
 		context.fillText(text, 200,200);
 	}
-	
-	/*function drawBox() {
-		// Box
-		context.fillStyle = '#000000';
-		context.fillRect(0,0,theCanvas.width,theCanvas.height);
-		
-	}*/
 	
 	// drawColors determines which color to highlight and draws the rest a darker shade. 
 	// If called as drawColors('off') no colors will be highlighted, as drawColors(RED) 
@@ -456,9 +497,16 @@ function canvasApp() {
 	        mouseX = e.layerX;
 	        mouseY = e.layerY;
 		}
+		
 		if (gameState == STATE_PLAYER_WAIT && !colorHighlighted) {
 			drawColors(getColorPicked());
 			colorHighlighted = true;
+		}
+
+		if (gameState == STATE_MENU) {
+			menuState = getMenuOptionPicked('state');
+			if (menuState == MENU_NONE) 
+				gameState = STATE_SIMON_PUSH;
 		}
 
 		/*** DEBUG ***/
@@ -471,6 +519,7 @@ function canvasApp() {
 			drawColors('off');
 			colorHighlighted = false;
 		}
+
 		/*** DEBUG ***/
 		if (DEBUG_MOUSE_UP)
 			console.log("("+mouseX+", "+mouseY+")");		
@@ -478,7 +527,6 @@ function canvasApp() {
 	
 	function eventMouseMove(e) {
 		if (gameState == STATE_MENU) {
-			var padding = 15;
 			if(e.offsetX) {
 				mouseX = e.offsetX;
 				mouseY = e.offsetY;
@@ -487,24 +535,7 @@ function canvasApp() {
 				mouseX = e.layerX;
 				mouseY = e.layerY;
 			}
-			// Play
-			if (mouseX > 60-padding && mouseX < 140+padding
-				&& mouseY > 85-padding && mouseY < 115+padding)
-				menuHighlight = 'play';
-			// Rules
-			else if (mouseX > 249-padding && mouseX < 351+padding 
-				&& mouseY > 85-padding && mouseY < 115+padding)
-				menuHighlight = 'rules';
-			// Scores
-			else if (mouseX > 33-padding && mouseX < 167+padding 
-				&& mouseY > 285-padding && mouseY < 315+padding)
-				menuHighlight = 'scores';
-			// About
-			else if (mouseX > 244-padding && mouseX < 356+padding
-				&& mouseY > 285-padding && mouseY < 315+padding)
-				menuHighlight = 'about';
-			else 
-				menuHighlight = 'none';
+			menuHighlight = getMenuOptionPicked('highlight');
 		}
 	}
 	
@@ -567,7 +598,7 @@ function canvasApp() {
 			showTitle();
 			break;
 		case STATE_MENU:
-			showMenu();
+			runMenu();
 			break;
 		}
 	}
