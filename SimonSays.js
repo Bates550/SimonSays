@@ -68,8 +68,12 @@ function canvasApp() {
 	// Game variables
 	var gameState = STATE_TITLE;
 	var menuState = MENU_NONE;
-	var mouseX = -1;
-	var mouseY = -1;
+	var moveMouseX = -1;
+	var moveMouseY = -1;
+	var upMouseX = -1;
+	var upMouseY = -1;
+	var downMouseX = -1;
+	var downMouseY = -1;
 	var simonColors = new Array();
 	var colorIndex = 0;
 	var playerColors = new Array();
@@ -94,7 +98,7 @@ function canvasApp() {
 	// Shows a flashy title until the user clicks somewhere on the canvas 
 	// at which point gameState is set to STATE_MENU.
 	function showTitle() {
-		if (mouseX > 0 && mouseY > 0)
+		if (downMouseX > 0 && downMouseY > 0)
 			gameState = STATE_MENU;
 		
 		var title = "Simon Says";
@@ -345,7 +349,7 @@ function canvasApp() {
 			}
 		}
 		else {
-			resetMouse();
+			resetDownMouse();
 			gameState = STATE_PLAYER_WAIT;
 			drawColors();
 			colorIndex = 0;
@@ -382,39 +386,39 @@ function canvasApp() {
 		}
 		else if (playerColors[colorIndex] == simonColors[colorIndex]) {
 			++colorIndex;
-			resetMouse();
+			resetDownMouse();
 			gameState = STATE_PLAYER_WAIT;
 		}
 		else 
 			gameState = STATE_GAME_OVER;
 	}
 
-	// Sets mouseX and mouseY to (-1,-1) to simplify hit testing.
+	// Sets downMouseX and downMouseY to (-1,-1) to simplify hit testing.
 	// Should be called before switching to STATE_PLAYER_WAIT
-	function resetMouse() {
-		mouseX = -1;
-		mouseY = -1;
+	function resetDownMouse() {
+		downMouseX = -1;
+		downMouseY = -1;
 	}
 	
 	// Waits for mouse clicks on the canvas.
 	function playerWait() {
-		if (mouseX >= 0 && mouseY >= 0) {
+		if (downMouseX >= 0 && downMouseY >= 0) {
 			gameState = STATE_PLAYER_TURN;
 		} 
 	}
 	
 	function getColorPicked() {
 		var colorPicked = RED;
-		if (mouseX > theCanvas.width/2 && mouseY < theCanvas.height/2)
+		if (downMouseX > theCanvas.width/2 && downMouseY < theCanvas.height/2)
 			colorPicked = BLUE;
-		else if (mouseX < theCanvas.width/2 && mouseY > theCanvas.height/2)
+		else if (downMouseX < theCanvas.width/2 && downMouseY > theCanvas.height/2)
 			colorPicked = GREEN;
-		else if (mouseX > theCanvas.width/2 && mouseY > theCanvas.height/2)
+		else if (downMouseX > theCanvas.width/2 && downMouseY > theCanvas.height/2)
 			colorPicked = YELLOW;
 		return colorPicked;
 	}
 
-	// Determines what menu option is selected based on current mouseX and mouseY.
+	// Determines what menu option is selected based on current moveMouseX and moveMouseY.
 	// option is a required parameter with valid options being 'highlight' and 
 	// 'state'. If 'highlight' is supplied, the function will return a valid menuHighlight
 	// string; if 'state' is supplied, the function will return a valid menuState.
@@ -431,26 +435,26 @@ function canvasApp() {
 		var tempMenuState = MENU_NONE;
 
 		// Play
-		if (mouseX > 60-padding && mouseX < 140+padding
-			&& mouseY > 85-padding && mouseY < 115+padding) {
+		if (moveMouseX > 60-padding && moveMouseX < 140+padding
+			&& moveMouseY > 85-padding && moveMouseY < 115+padding) {
 			tempMenuHighlight = 'play';
 			tempMenuState = MENU_PLAY;
 		}
 		// Rules
-		else if (mouseX > 249-padding && mouseX < 351+padding 
-			&& mouseY > 85-padding && mouseY < 115+padding) {
+		else if (moveMouseX > 249-padding && moveMouseX < 351+padding 
+			&& moveMouseY > 85-padding && moveMouseY < 115+padding) {
 			tempMenuHighlight = 'rules';
 			tempMenuState = MENU_RULES;
 		}
 		// Scores
-		else if (mouseX > 33-padding && mouseX < 167+padding 
-			&& mouseY > 285-padding && mouseY < 315+padding) {
+		else if (moveMouseX > 33-padding && moveMouseX < 167+padding 
+			&& moveMouseY > 285-padding && moveMouseY < 315+padding) {
 			tempMenuHighlight = 'scores';
 			tempMenuState = MENU_SCORES;
 		}
 		// About
-		else if (mouseX > 244-padding && mouseX < 356+padding
-			&& mouseY > 285-padding && mouseY < 315+padding) {
+		else if (moveMouseX > 244-padding && moveMouseX < 356+padding
+			&& moveMouseY > 285-padding && moveMouseY < 315+padding) {
 			tempMenuHighlight = 'about';
 			tempMenuState = MENU_ABOUT;
 		} 
@@ -559,25 +563,25 @@ function canvasApp() {
         context.fillText(line, x, y);
     }
 
-	// Returns true if mouseX and mouseY are within the box defined by a starting point 
+	// Returns true if mX and mY are within the box defined by a starting point 
 	// of (x1, y1), width w, and height h.
-	function areaClicked(x1, y1, w, h) {
+	function areaClicked(x, y, w, h, mX, mY) {
 		var result = false;
-		var x2 = x1 + w;
-		var y2 = y1 + h;
-		if (mouseX > x1 && mouseX < x2 && mouseY > y1 && mouseY < y2)
+		var x2 = x + w;
+		var y2 = y + h;
+		if (mX > x && mX < x && mY > y && mY < y2)
 			result = true;
 		return result;
 	}
 
 	function eventMouseDown(e) {
 	    if(e.offsetX) {
-	        mouseX = e.offsetX;
-	        mouseY = e.offsetY;
+	        downMouseX = e.offsetX;
+	        downMouseY = e.offsetY;
 	    }
 		else if (e.layerX) {
-	        mouseX = e.layerX;
-	        mouseY = e.layerY;
+	        downMouseX = e.layerX;
+	        downMouseY = e.layerY;
 		}
 		
 		if (gameState == STATE_PLAYER_WAIT && !colorHighlighted) {
@@ -593,7 +597,7 @@ function canvasApp() {
 
 		/*** DEBUG ***/
 		if (DEBUG_MOUSE_DOWN)
-			console.log("("+mouseX+", "+mouseY+")");
+			console.log("("+downMouseX+", "+downMouseY+")");
 	}
 
 	function eventMouseUp(e) {
@@ -604,18 +608,18 @@ function canvasApp() {
 
 		/*** DEBUG ***/
 		if (DEBUG_MOUSE_UP)
-			console.log("("+mouseX+", "+mouseY+")");		
+			console.log("("+upMouseX+", "+upMouseY+")");		
 	}
 	
 	function eventMouseMove(e) {
 		if (gameState == STATE_MENU && menuState == MENU_NONE) {
 			if(e.offsetX) {
-				mouseX = e.offsetX;
-				mouseY = e.offsetY;
+				moveMouseX = e.offsetX;
+				moveMouseY = e.offsetY;
 			}
 			else if (e.layerX) {
-				mouseX = e.layerX;
-				mouseY = e.layerY;
+				moveMouseX = e.layerX;
+				moveMouseY = e.layerY;
 			}
 			menuHighlight = getMenuOptionPicked('highlight');
 		}
