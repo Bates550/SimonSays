@@ -1,5 +1,5 @@
 /*** DEBUG ***/
-const DEBUG_STATE = false;
+const DEBUG_STATE = true;
 const DEBUG_SIMON = false;
 const DEBUG_PLAYER = false;
 const DEBUG_MOUSE_DOWN = false;
@@ -559,6 +559,17 @@ function canvasApp() {
         context.fillText(line, x, y);
     }
 
+	// Returns true if mouseX and mouseY are within the box defined by a starting point 
+	// of (x1, y1), width w, and height h.
+	function areaClicked(x1, y1, w, h) {
+		var result = false;
+		var x2 = x1 + w;
+		var y2 = y1 + h;
+		if (mouseX > x1 && mouseX < x2 && mouseY > y1 && mouseY < y2)
+			result = true;
+		return result;
+	}
+
 	function eventMouseDown(e) {
 	    if(e.offsetX) {
 	        mouseX = e.offsetX;
@@ -572,10 +583,12 @@ function canvasApp() {
 		if (gameState == STATE_PLAYER_WAIT && !colorHighlighted) {
 			drawColors(getColorPicked());
 			colorHighlighted = true;
-		}
-
-		if (gameState == STATE_MENU) {
+		} 
+		if (gameState == STATE_MENU && menuState == MENU_NONE) 
 			menuState = getMenuOptionPicked('state');
+		else if (gameState == STATE_MENU && menuState == MENU_ABOUT) {
+			if (areaClicked(140, 295, 70, 50));
+				menuState = MENU_NONE;
 		}
 
 		/*** DEBUG ***/
@@ -595,7 +608,7 @@ function canvasApp() {
 	}
 	
 	function eventMouseMove(e) {
-		if (gameState == STATE_MENU) {
+		if (gameState == STATE_MENU && menuState == MENU_NONE) {
 			if(e.offsetX) {
 				mouseX = e.offsetX;
 				mouseY = e.offsetY;
