@@ -1,13 +1,14 @@
 /*** DEBUG ***/
-const DEBUG_STATE = true;
+const DEBUG_STATE = false;
 const DEBUG_SIMON = false;
 const DEBUG_PLAYER = false;
-const DEBUG_MOUSE_DOWN = false;
+const DEBUG_MOUSE_DOWN = true;
 const DEBUG_MOUSE_UP = false;
+const DEBUG_MOUSE_MOVE = false;
 const DEBUG_WAIT_INTERVAL = false;
 const DEBUG_HIGHLIGHT_INTERVAL = false;
 const DEBUG_TITLE = false;
-const DEBUG_MENU_STATE = true;
+const DEBUG_MENU_STATE = false;
 const DEBUG_MENU_TEXT = false;
 
 window.addEventListener('load', eventWindowLoaded, false);
@@ -98,8 +99,10 @@ function canvasApp() {
 	// Shows a flashy title until the user clicks somewhere on the canvas 
 	// at which point gameState is set to STATE_MENU.
 	function showTitle() {
-		if (downMouseX > 0 && downMouseY > 0)
+		if (downMouseX > 0 && downMouseY > 0) {
+			resetDownMouse();
 			gameState = STATE_MENU;
+		}
 		
 		var title = "Simon Says";
 		context.font = "40px Plaster";
@@ -188,6 +191,7 @@ function canvasApp() {
 	}
 	
 	function showMenu() {
+		context.textAlign = 'left';
 		context.font = "30px Plaster";
 		var playW = context.measureText("Play").width;
 		var rulesW = context.measureText("Rules").width;
@@ -208,6 +212,8 @@ function canvasApp() {
 		var tempGreen = '#00CC00';
 		var tempBlue = '#0000CC';
 		var colorsParam = 'none';
+
+		menuHighlight = getMenuOptionPicked('highlight', moveMouseX, moveMouseY);
 
 		switch (menuHighlight) {
 		case 'none':
@@ -241,6 +247,12 @@ function canvasApp() {
 		context.fillStyle = tempRed;
 		context.fillText("About", aboutX, aboutY);
 
+		if (downMouseX >= 0 && downMouseY >= 0) {
+			menuState = getMenuOptionPicked('state', downMouseX, downMouseY);
+			resetDownMouse();
+		}
+
+		/*** DEBUG ***/
 		if (DEBUG_MENU_TEXT) {
 			console.log("Play: ("+playX+", "+(playY-15)+", "+(playX+playW)+", "+(playY+15)+")");
 			console.log("Rules: ("+rulesX+", "+(rulesY-15)+", "+(rulesX+rulesW)+", "+(rulesY+15)+")");
@@ -252,38 +264,44 @@ function canvasApp() {
 	function showAbout() {
 		var topPadding = 70;
 		var sidePadding = 25;
-		var x = theCanvas.width*0.5;
-		var y = topPadding;
-		var w = theCanvas.width-sidePadding*2;
+		var textX = theCanvas.width*0.5;
+		var textY = topPadding;
+		var textW = theCanvas.width-sidePadding*2;
 		var lineHeight = 30;
-		var text = "Simon Says is a personal project that I used to experiment with the HTML5 Canvas tag and Javascript. The source can be found at github.com/Bates550/simon-says or in your browser if you're into that sort of thing."
-		var backHighlight = false;
+		var text = "Simon Says is a personal project that I used to experiment with the HTML5 Canvas tag and JavaScript. The source can be found at github.com/Bates550/simon-says or in your browser if you're into that sort of thing."
 		var backRectColor = '#CC0000';
 		var backTextColor = '#CCCC00';
 		var buttonW = 70;
 		var buttonR = 25;
 		var buttonX = theCanvas.width*0.5 - buttonW*0.5 - buttonR;
 		var buttonY = theCanvas.height*0.8 - buttonR;
+		
+		if (areaClicked(buttonX, buttonY, buttonW+50, buttonR*2, moveMouseX, moveMouseY)) {
+			backRectColor = '#FF0000';
+			backTextColor = '#FFFF00';
+		}
 
 		context.fillStyle = '#CCCC00';
 		context.fillRect(0, 0, theCanvas.width, theCanvas.height);
 		context.font = "18px Tahoma";
 		context.fillStyle = '#CC0000';
 		context.textAlign = 'center'
-		wrapText(context, text, x, y, w, lineHeight);
-
-		if (backHighlight == true) {
-			backRectColor = '#FF0000';
-			backTextColor = '#FFFF00';
-		}
+		wrapText(context, text, textX, textY, textW, lineHeight);
 
 		context.fillStyle = backRectColor;
 		drawButton(context, buttonX, buttonY, buttonR, buttonW);
 		context.font = "30px Plaster";
 		context.fillStyle = backTextColor;
 		context.fillText("Back", theCanvas.width*0.5, theCanvas.height*0.8);
+
+		if (areaClicked(buttonX, buttonY, buttonW+50, buttonR*2, downMouseX, downMouseY)) {
+			menuState = MENU_NONE;
+			resetDownMouse();
+		}
 	}
 	
+	// Draws a rounded rectangular shape starting at (x, y), with a rectangular
+	// portion of width w, and height 2 * radius.
 	function drawButton(context, x, y, radius, width) {
 		context.beginPath();
 		context.moveTo(x+radius, y);
@@ -369,7 +387,7 @@ function canvasApp() {
 	// reached the end of simonColors, we again wait for player input, and if the colors
 	// do not match, it's game over... man.
 	function playerTurn() {
-		playerColors.push(getColorPicked());
+		playerColors.push(getColorPicked(downMouseX, downMouseY));
 		
 		/*** DEBUG ***/
 		if (DEBUG_PLAYER) {
@@ -387,10 +405,28 @@ function canvasApp() {
 		else if (playerColors[colorIndex] == simonColors[colorIndex]) {
 			++colorIndex;
 			resetDownMouse();
+			resetUpMouse();
 			gameState = STATE_PLAYER_WAIT;
 		}
 		else 
 			gameState = STATE_GAME_OVER;
+	}
+
+	// HIGHLIGHT/UNHIGHLIGHT NOT WORKING SINCE REDISTRIBUTING TASK TO THIS FUNCTION
+	// INSTEAD OF BEING HANDLED BY THE MOUSE EVENT HANDLERS. POSSIBLY GOING TO REDO HOW 
+	// HIGHLIGHT/UNHIGHLIGHT IS HANDLED, SO PUTTING THIS OFF FOR NOW.
+	// Waits for mouse clicks on the canvas and highlight/unhighlights selected color 
+	function playerWait() {
+		if (downMouseX >= 0 && downMouseY >= 0) {
+			drawColors(getColorPicked(downMouseX, downMouseY));
+			//colorHighlighted = true;
+		} 
+		if (upMouseX >= 0 && upMouseY >= 0) {
+			drawColors('off');
+			//colorHighlighted = false;
+			//gameState = STATE_PLAYER_TURN;
+
+		}
 	}
 
 	// Sets downMouseX and downMouseY to (-1,-1) to simplify hit testing.
@@ -399,32 +435,35 @@ function canvasApp() {
 		downMouseX = -1;
 		downMouseY = -1;
 	}
-	
-	// Waits for mouse clicks on the canvas.
-	function playerWait() {
-		if (downMouseX >= 0 && downMouseY >= 0) {
-			gameState = STATE_PLAYER_TURN;
-		} 
+
+	function resetUpMouse() {
+		upMouseX = -1;
+		upMouseY = -1;
+	}
+
+	function resetMoveMouse() {
+		moveMouseX = -1;
+		moveMouseY = -1;
 	}
 	
-	function getColorPicked() {
+	function getColorPicked(mX, mY) {
 		var colorPicked = RED;
-		if (downMouseX > theCanvas.width/2 && downMouseY < theCanvas.height/2)
+		if (mX > theCanvas.width/2 && mY < theCanvas.height/2)
 			colorPicked = BLUE;
-		else if (downMouseX < theCanvas.width/2 && downMouseY > theCanvas.height/2)
+		else if (mX < theCanvas.width/2 && mY > theCanvas.height/2)
 			colorPicked = GREEN;
-		else if (downMouseX > theCanvas.width/2 && downMouseY > theCanvas.height/2)
+		else if (mX > theCanvas.width/2 && mY > theCanvas.height/2)
 			colorPicked = YELLOW;
 		return colorPicked;
 	}
 
-	// Determines what menu option is selected based on current moveMouseX and moveMouseY.
+	// Determines what menu option is selected based on current mX and mY.
 	// option is a required parameter with valid options being 'highlight' and 
 	// 'state'. If 'highlight' is supplied, the function will return a valid menuHighlight
 	// string; if 'state' is supplied, the function will return a valid menuState.
 	// The function will return null and display an error to the console if an invalid
 	// parameter is supplied for option.
-	function getMenuOptionPicked(option) {
+	function getMenuOptionPicked(option, mX, mY) {
 		if (option != 'highlight' && option != 'state') {
 			console.log("getMenuOptionPicked called with invalid parameter: "+option);
 			return null;
@@ -435,26 +474,26 @@ function canvasApp() {
 		var tempMenuState = MENU_NONE;
 
 		// Play
-		if (moveMouseX > 60-padding && moveMouseX < 140+padding
-			&& moveMouseY > 85-padding && moveMouseY < 115+padding) {
+		if (mX > 60-padding && mX < 140+padding
+			&& mY > 85-padding && mY < 115+padding) {
 			tempMenuHighlight = 'play';
 			tempMenuState = MENU_PLAY;
 		}
 		// Rules
-		else if (moveMouseX > 249-padding && moveMouseX < 351+padding 
-			&& moveMouseY > 85-padding && moveMouseY < 115+padding) {
+		else if (mX > 249-padding && mX < 351+padding 
+			&& mY > 85-padding && mY < 115+padding) {
 			tempMenuHighlight = 'rules';
 			tempMenuState = MENU_RULES;
 		}
 		// Scores
-		else if (moveMouseX > 33-padding && moveMouseX < 167+padding 
-			&& moveMouseY > 285-padding && moveMouseY < 315+padding) {
+		else if (mX > 33-padding && mX < 167+padding 
+			&& mY > 285-padding && mY < 315+padding) {
 			tempMenuHighlight = 'scores';
 			tempMenuState = MENU_SCORES;
 		}
 		// About
-		else if (moveMouseX > 244-padding && moveMouseX < 356+padding
-			&& moveMouseY > 285-padding && moveMouseY < 315+padding) {
+		else if (mX > 244-padding && mX < 356+padding
+			&& mY > 285-padding && mY < 315+padding) {
 			tempMenuHighlight = 'about';
 			tempMenuState = MENU_ABOUT;
 		} 
@@ -569,7 +608,7 @@ function canvasApp() {
 		var result = false;
 		var x2 = x + w;
 		var y2 = y + h;
-		if (mX > x && mX < x && mY > y && mY < y2)
+		if (mX >= x && mX <= x2 && mY >= y && mY <= y2)
 			result = true;
 		return result;
 	}
@@ -584,45 +623,58 @@ function canvasApp() {
 	        downMouseY = e.layerY;
 		}
 		
+		/*
 		if (gameState == STATE_PLAYER_WAIT && !colorHighlighted) {
 			drawColors(getColorPicked());
 			colorHighlighted = true;
-		} 
+		}
+		*/ 
+		/*
 		if (gameState == STATE_MENU && menuState == MENU_NONE) 
 			menuState = getMenuOptionPicked('state');
+
 		else if (gameState == STATE_MENU && menuState == MENU_ABOUT) {
-			if (areaClicked(140, 295, 70, 50));
+			if (areaClicked(140, 295, 70, 50, downMouseX, downMouseY));
 				menuState = MENU_NONE;
 		}
+		*/
 
 		/*** DEBUG ***/
 		if (DEBUG_MOUSE_DOWN)
-			console.log("("+downMouseX+", "+downMouseY+")");
+			console.log("(downMouseX, downMouseY): ("+downMouseX+", "+downMouseY+")");
 	}
 
 	function eventMouseUp(e) {
-		if (colorHighlighted) {
-			drawColors('off');
-			colorHighlighted = false;
+		if(e.offsetX) {
+	        upMouseX = e.offsetX;
+	        upMouseY = e.offsetY;
+	    }
+		else if (e.layerX) {
+	        upMouseX = e.layerX;
+	        upMouseY = e.layerY;
 		}
 
 		/*** DEBUG ***/
 		if (DEBUG_MOUSE_UP)
-			console.log("("+upMouseX+", "+upMouseY+")");		
+			console.log("(upMouseX, upMouseY): ("+upMouseX+", "+upMouseY+")");
 	}
 	
 	function eventMouseMove(e) {
-		if (gameState == STATE_MENU && menuState == MENU_NONE) {
-			if(e.offsetX) {
-				moveMouseX = e.offsetX;
-				moveMouseY = e.offsetY;
-			}
-			else if (e.layerX) {
-				moveMouseX = e.layerX;
-				moveMouseY = e.layerY;
-			}
-			menuHighlight = getMenuOptionPicked('highlight');
+		//if (gameState == STATE_MENU && menuState == MENU_NONE) {
+		if(e.offsetX) {
+			moveMouseX = e.offsetX;
+			moveMouseY = e.offsetY;
 		}
+		else if (e.layerX) {
+			moveMouseX = e.layerX;
+			moveMouseY = e.layerY;
+		}
+		//	menuHighlight = getMenuOptionPicked('highlight');
+
+		/*** DEBUG ***/
+		if (DEBUG_MOUSE_MOVE)
+			console.log("(moveMouseX, moveMouseY): ("+moveMouseX+", "+moveMouseY+")");
+
 	}
 	
 	function run() {
