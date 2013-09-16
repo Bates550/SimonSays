@@ -314,7 +314,42 @@ function canvasApp() {
 	} 
 
 	function showRules() {
+		var topPadding = 70;
+		var sidePadding = 25;
+		var textX = theCanvas.width*0.5;
+		var textY = topPadding;
+		var textW = theCanvas.width-sidePadding*2;
+		var lineHeight = 30;
+		var text = "Repeat the sequence of colors after it has been displayed. After you correctly complete the current sequence, a random color will be added to the current sequence and you must repeat it again to advance."
+		var backRectColor = '#00CC00';
+		var backTextColor = '#0000CC';
+		var buttonW = 70;
+		var buttonR = 25;
+		var buttonX = theCanvas.width*0.5 - buttonW*0.5 - buttonR;
+		var buttonY = theCanvas.height*0.8 - buttonR;
 		
+		if (areaClicked(buttonX, buttonY, buttonW+50, buttonR*2, moveMouseX, moveMouseY)) {
+			backRectColor = '#00FF00';
+			backTextColor = '#0000FF';
+		}
+
+		context.fillStyle = '#0000CC';
+		context.fillRect(0, 0, theCanvas.width, theCanvas.height);
+		context.font = "18px Tahoma";
+		context.fillStyle = '#00CC00';
+		context.textAlign = 'center'
+		wrapText(context, text, textX, textY, textW, lineHeight);
+
+		context.fillStyle = backRectColor;
+		drawButton(context, buttonX, buttonY, buttonR, buttonW);
+		context.font = "30px Plaster";
+		context.fillStyle = backTextColor;
+		context.fillText("Back", theCanvas.width*0.5, theCanvas.height*0.8);
+
+		if (areaClicked(buttonX, buttonY, buttonW+50, buttonR*2, downMouseX, downMouseY)) {
+			menuState = MENU_NONE;
+			resetDownMouse();
+		}
 	}
 	
 	function showHighScores() {
@@ -418,15 +453,9 @@ function canvasApp() {
 	// Waits for mouse clicks on the canvas and highlight/unhighlights selected color 
 	function playerWait() {
 		if (downMouseX >= 0 && downMouseY >= 0) {
-			drawColors(getColorPicked(downMouseX, downMouseY));
-			//colorHighlighted = true;
+			//drawColors(getColorPicked(downMouseX, downMouseY));
+			gameState = STATE_PLAYER_TURN;	
 		} 
-		if (upMouseX >= 0 && upMouseY >= 0) {
-			drawColors('off');
-			//colorHighlighted = false;
-			//gameState = STATE_PLAYER_TURN;
-
-		}
 	}
 
 	// Sets downMouseX and downMouseY to (-1,-1) to simplify hit testing.
@@ -514,7 +543,8 @@ function canvasApp() {
 	
 	// drawColors determines which color to highlight and draws the rest a darker shade. 
 	// If called as drawColors('off') no colors will be highlighted, as drawColors(RED) 
-	// the red square will be highlighted, as drawColors() the color at simonColors[colorIndex]
+	// the red square will be highlighted, as drawColors([RED, GREEN]) the red and green 
+	// squares will be highlighted, as drawColors() the color at simonColors[colorIndex]
 	// will be highlighted.
 	function drawColors(color) {
 		// Default color to 'none'.
@@ -529,7 +559,25 @@ function canvasApp() {
 		var tempGreen = '#00B200';
 		var tempBlue = '#0000B2';
 		
-		if (color != 'off') {
+		if (typeof color == Array) {
+			for (var i = 0; i < color.length; ++i) {
+				switch(color[i]) {
+				case RED:
+					tempRed = '#FF0000';
+					break;
+				case YELLOW:
+					tempYellow = '#FFFF00';
+					break;
+				case GREEN:
+					tempGreen = '#00FF00';
+					break;
+				case BLUE:
+					tempBlue = '#0000FF';
+					break;	
+				}
+			}
+		}
+		else if (color != 'off') {
 			if (color == 'none')
 				var tempColor = simonColors[colorIndex];
 			else
