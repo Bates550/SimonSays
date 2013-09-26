@@ -89,11 +89,13 @@ function canvasApp() {
 	var titleColorIndex = 0;
 	var titleInterval = 50;
 	var titleTimer = titleInterval;
+	var playerDisplay = {};
+	var playerDisplayInterval = 10;
 	
 	function resetGame() {
 		simonColors = new Array();
 		colorIndex = 0;
-		gameState = STATE_TITLE;
+		gameState = STATE_MENU;
 	}
 	
 	// Shows a flashy title until the user clicks somewhere on the canvas 
@@ -185,7 +187,7 @@ function canvasApp() {
 			showRules();
 			break;
 		case MENU_SCORES:
-			showHighScores();
+			showScores();
 			break;
 		}
 	}
@@ -352,8 +354,84 @@ function canvasApp() {
 		}
 	}
 	
-	function showHighScores() {
-	
+	function showScores() {
+		var topPadding = 70;
+		var sidePadding = 25;
+		var textX = theCanvas.width*0.5;
+		var textY = topPadding;
+		var textW = theCanvas.width-sidePadding*2;
+		var lineHeight = 30;
+		var text = "Coming Soon";
+		var backRectColor = '#0000CC';
+		var backTextColor = '#00CC00';
+		var buttonW = 70;
+		var buttonR = 25;
+		var buttonX = theCanvas.width*0.5 - buttonW*0.5 - buttonR;
+		var buttonY = theCanvas.height*0.8 - buttonR;
+		
+		if (areaClicked(buttonX, buttonY, buttonW+50, buttonR*2, moveMouseX, moveMouseY)) {
+			backRectColor = '#0000FF';
+			backTextColor = '#00FF00';
+		}
+
+		context.fillStyle = '#00CC00';
+		context.fillRect(0, 0, theCanvas.width, theCanvas.height);
+		context.font = "30px Plaster";
+		context.fillStyle = '#0000CC';
+		context.textAlign = 'center'
+		wrapText(context, text, textX, textY, textW, lineHeight);
+
+		context.fillStyle = backRectColor;
+		drawButton(context, buttonX, buttonY, buttonR, buttonW);
+		context.font = "30px Plaster";
+		context.fillStyle = backTextColor;
+		context.fillText("Back", theCanvas.width*0.5, theCanvas.height*0.8);
+
+		if (areaClicked(buttonX, buttonY, buttonW+50, buttonR*2, downMouseX, downMouseY)) {
+			menuState = MENU_NONE;
+			resetDownMouse();
+		}
+	}
+
+	function showGameOver() {
+		if (downMouseX > 0 && downMouseY > 0) {
+			resetDownMouse();
+			menuState = MENU_NONE;
+			resetGame();
+		}
+		
+		var title = "Game Over";
+		context.font = "40px Plaster";
+		var titleLen = context.measureText(title).width;
+		var titleX = theCanvas.width/2-titleLen/2;
+		var titleY = theCanvas.height*0.4;
+		var caption = "Click anywhere to continue.";
+		context.font = "20px Tahoma";
+		var captionLen = context.measureText(caption).width;
+		var captionX = theCanvas.width/2-captionLen/2;
+		var captionY = theCanvas.height*0.6;
+				
+		var titleColor = colorArray[(titleColorIndex)%4];
+		var captionColor = colorArray[(titleColorIndex+2)%4];
+		
+		if (titleTimer <= 0) {
+			titleColorIndex = (titleColorIndex+1)%4;
+			titleTimer = titleInterval;
+		}
+		else
+			--titleTimer;
+		
+		// Draw background
+		context.fillStyle = '#000000';
+		context.fillRect(0, 0, theCanvas.width, theCanvas.height);
+		// Draw title
+		context.fillStyle = titleColor;
+		context.font = "40px Plaster";
+		context.fillText(title, titleX, titleY);
+		// Draw caption
+		context.fillStyle = captionColor;
+		context.font = "20px Tahoma";
+		context.fillText(caption, captionX, captionY);
 	}
 	
 	// Implements a pause between displaying picks of the same color so that the player
@@ -422,7 +500,9 @@ function canvasApp() {
 	// reached the end of simonColors, we again wait for player input, and if the colors
 	// do not match, it's game over... man.
 	function playerTurn() {
-		playerColors.push(getColorPicked(downMouseX, downMouseY));
+		var colorPicked = getColorPicked(downMouseX, downMouseY);
+		playerColors.push(colorPicked);
+		playerDisplay[colorPicked] = playerDisplayInterval;
 		
 		/*** DEBUG ***/
 		if (DEBUG_PLAYER) {
@@ -443,8 +523,10 @@ function canvasApp() {
 			resetUpMouse();
 			gameState = STATE_PLAYER_WAIT;
 		}
-		else 
+		else {
+			resetDownMouse();
 			gameState = STATE_GAME_OVER;
+		}
 	}
 
 	// HIGHLIGHT/UNHIGHLIGHT NOT WORKING SINCE REDISTRIBUTING TASK TO THIS FUNCTION
@@ -455,7 +537,22 @@ function canvasApp() {
 		if (downMouseX >= 0 && downMouseY >= 0) {
 			//drawColors(getColorPicked(downMouseX, downMouseY));
 			gameState = STATE_PLAYER_TURN;	
-		} 
+		}
+
+		var colorsArray = new Array();
+		for (var k in playerDisplay) {
+			colorsArray.push(k);
+			--playerDisplay[k];
+			if (playerDisplay[k] < 0)
+				delete playerDisplay[k];
+		}
+
+		console.log("playerDisplay: "+playerDisplay);
+		console.log("playerDisplay[k]: "+playerDisplay[k]);
+		console.log("colorsArray: "+colorsArray);
+
+		drawColors(colorsArray);
+ 
 	}
 
 	// Sets downMouseX and downMouseY to (-1,-1) to simplify hit testing.
@@ -527,7 +624,6 @@ function canvasApp() {
 			tempMenuState = MENU_ABOUT;
 		} 
 
-
 		if (option == 'highlight')
 			return tempMenuHighlight;
 		else if (option == 'state') 
@@ -559,7 +655,7 @@ function canvasApp() {
 		var tempGreen = '#00B200';
 		var tempBlue = '#0000B2';
 		
-		if (typeof color == Array) {
+		if (typeof color != 'number' && typeof color != 'string') {
 			for (var i = 0; i < color.length; ++i) {
 				switch(color[i]) {
 				case RED:
@@ -778,7 +874,7 @@ function canvasApp() {
 			playerTurn();
 			break;
 		case STATE_GAME_OVER:
-			gameOver();
+			showGameOver();
 			break;
 		case STATE_TITLE:
 			showTitle();
