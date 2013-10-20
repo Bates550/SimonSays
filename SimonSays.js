@@ -2,7 +2,7 @@
 const DEBUG_STATE = false;
 const DEBUG_SIMON = false;
 const DEBUG_PLAYER = false;
-const DEBUG_MOUSE_DOWN = true;
+const DEBUG_MOUSE_DOWN = false;
 const DEBUG_MOUSE_UP = false;
 const DEBUG_MOUSE_MOVE = false;
 const DEBUG_WAIT_INTERVAL = false;
@@ -94,6 +94,7 @@ function canvasApp() {
 	
 	function resetGame() {
 		simonColors = new Array();
+		playerColors = new Array();
 		colorIndex = 0;
 		gameState = STATE_MENU;
 	}
@@ -538,7 +539,7 @@ function canvasApp() {
 			//drawColors(getColorPicked(downMouseX, downMouseY));
 			gameState = STATE_PLAYER_TURN;	
 		}
-
+		/*
 		var colorsArray = new Array();
 		for (var k in playerDisplay) {
 			colorsArray.push(k);
@@ -552,7 +553,7 @@ function canvasApp() {
 		console.log("colorsArray: "+colorsArray);
 
 		drawColors(colorsArray);
- 
+		*/
 	}
 
 	// Sets downMouseX and downMouseY to (-1,-1) to simplify hit testing.
@@ -628,13 +629,6 @@ function canvasApp() {
 			return tempMenuHighlight;
 		else if (option == 'state') 
 			return tempMenuState;
-	}
-	
-	function gameOver() {
-		context.fillStyle = '#000000';
-		context.font = "20px Verdana";
-		var text = "GAME OVER";
-		context.fillText(text, 200,200);
 	}
 	
 	// drawColors determines which color to highlight and draws the rest a darker shade. 
